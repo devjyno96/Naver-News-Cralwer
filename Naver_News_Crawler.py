@@ -1,13 +1,6 @@
 import requests as req
 import bs4 as soup
-
-
 import json
-# input
-# required / Not required
-# word / sort, ds, de
-# 검색할 단어/ 정렬 조건, 시작일, 마지막 일
-
 """
 return type
 
@@ -22,8 +15,6 @@ return type
     ...
 """
 def news_crawling(word, day_start = None, day_end = None, sort = 1):
-    # url = "https://search.naver.com/search.naver?where=news&query=%EC%82%BC%EC%84%B1%EC%A0%84%EC%9E%90&sm=tab_srt&sort=2&photo=0&field=0&reporter_article=&pd=5&ds=2019.09.19&de=2020.09.18&docid=&nso=so%3Ada%2Cp%3A1y%2Ca%3Aall&mynews=0&refresh_start=0&related=0"
-    url = "https://search.naver.com/search.naver?where=news&query=%EC%82%BC%EC%84%B1%EC%A0%84%EC%9E%90&sm=tab_srt&sort=1&ds=2020.09.09&de=2020.09.16"
     base_url = "https://search.naver.com/search.naver?where=news"
     result = {"total" : 0, "items" : []}
     base_url += "&query=" + word
@@ -37,17 +28,19 @@ def news_crawling(word, day_start = None, day_end = None, sort = 1):
     # &query=(검색어)
     # &sort=(0, 1, 2 : 관련순, 최신, 오래된 순)
     # &ds=(YYYY.MM.DD : 검색 시작)
-    # &de=(YYYY.MM.DD : 검색 끝)"
+    # &de=(YYYY.MM.DD : 검색 끝)
+    # &nso=so:dd,p:from" + YYYYMMDD + "to" + YYYYMMDD + ",a:all" 기간 검색 조건에 필요햔 query
     # &start=N1 ( N 페이지 접근)
-    # res = req.get(url)
+
     res = req.get(base_url)
-    soup_result = soup.BeautifulSoup(res.text, 'html.parser')
+    soup_result = soup.BeautifulSoup(res.text, 'lxml')
 
     total_article_count = int(soup_result.find(class_="title_desc all_my").find('span').text.split("/")[1][:-1].replace(",", ""))
     result['total'] = total_article_count
     page_count = int(total_article_count / 10)
     if total_article_count % 10 != 0 :
         page_count += 1
+     
     print( "page : " + str(page_count)  + " crawling start")
     for page_number in range(page_count):
         res = req.get(base_url + "&start=" + str(page_number) + "1")
@@ -68,9 +61,10 @@ def news_crawling(word, day_start = None, day_end = None, sort = 1):
             result['items'].append(item)
 
     print( "page : " + str(page_count)  + " crawling complete")
-    with open('test.json', 'w', encoding='utf-8') as f:
-        json.dump(result, fp = f, ensure_ascii=False, sort_keys=False, indent=4)
     return result
 
 if __name__ == "__main__" :
-    print(news_crawling("삼성전자", '2020.09.18', '2020.09.18'))
+    result = news_crawling("삼성전자", '2020.09.18', '2020.09.18')
+    
+    with open('test.json', 'w', encoding='utf-8') as f:
+        json.dump(result, fp = f, ensure_ascii=False, sort_keys=False, indent=4)
