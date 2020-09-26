@@ -107,5 +107,5 @@ def save_json(filename, json_data):
         json.dump(json_data, fp = f, ensure_ascii=False, sort_keys=False, indent=4)
 
 if __name__ == "__main__" :
-    crawling_multiple_day("삼성전자", '2020.05.01', '2020.08.31')
+    crawling_multiple_day("삼성전자", '2020.08.23', '2020.08.31')
     
