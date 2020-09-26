@@ -81,6 +81,13 @@ def news_crawling(word, day_start = None, day_end = None, sort = 1):
     print( "page : " + str(page_count)  + " crawling complete")
     return result
 
+def crawling_oneday(word, day):
+    return news_crawling(word, day_start=day, day_end=day)
+
+def crawling_multiple_day(word, day_start, day_end):
+    duration_time = time_kit.get_days_distance(day_start, day_end)
+    
+
 if __name__ == "__main__" :
     result = news_crawling("삼성전자", '2020.09.26', '2020.09.26')
     
