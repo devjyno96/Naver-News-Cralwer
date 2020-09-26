@@ -2,7 +2,12 @@ import requests as req
 import bs4 as soup
 import json
 
+
 import time_kit
+
+import re
+
+regex = re.compile(r'\d\d\d\d.\d\d.\d\d') # pub_Date를 구분하기 위한 정규표현식
 
 """
 return type
@@ -38,7 +43,7 @@ def news_crawling(word, day_start = None, day_end = None, sort = 1):
         base_url += "&ds=" + day_start
         base_url += "&de=" + day_end
         base_url += "&nso=so:dd,p:from" + day_start.replace(".", "") + "to" + day_end.replace(".", "") + ",a:all"
-        print(base_url)
+        # print(base_url)
         
     # &query=(검색어)
     # &sort=(0, 1, 2 : 관련순, 최신, 오래된 순)
@@ -56,8 +61,9 @@ def news_crawling(word, day_start = None, day_end = None, sort = 1):
     if total_article_count % 10 != 0 :
         page_count += 1
      
-    print( "page : " + str(page_count)  + " crawling start")
+    # print( str(day_start) + " : " + str(day_end) + " page : " + str(page_count)  + " crawling start")
     for page_number in range(page_count):
+        # print(base_url + "&start=" + str(page_number) + "1")
         res = req.get(base_url + "&start=" + str(page_number) + "1")
         soup_result = soup.BeautifulSoup(res.text, 'html.parser')
         articles = soup_result.find(class_="type01").find_all('li')
@@ -67,7 +73,7 @@ def news_crawling(word, day_start = None, day_end = None, sort = 1):
             item["article_id"] = i.find(class_="_sp_each_title")['onclick'].split('&')[2][25:]
             item["original_link"] = i.find(class_="_sp_each_title")['href']
 
-            time = [i for i in i.find(class_="txt_inline").text.split("  ") if ' 전' in i or '.' in i][0]
+            time = [i for i in i.find(class_="txt_inline").text.split("  ") if ' 전' in i or regex.search(i) is not None ][0]
             item["pub_date"] = pub_date_make(time)
             # item["pub_date"] = [i for i in i.find(class_="txt_inline").text.split("  ") if ' 전' in i or '.' in i][0]
             """
@@ -78,18 +84,28 @@ def news_crawling(word, day_start = None, day_end = None, sort = 1):
             """
             result['items'].append(item)
 
-    print( "page : " + str(page_count)  + " crawling complete")
+    # print( "page : " + str(page_count)  + " crawling complete")
     return result
 
 def crawling_oneday(word, day):
     return news_crawling(word, day_start=day, day_end=day)
 
 def crawling_multiple_day(word, day_start, day_end):
+    print("crawling mutiple day start")
     duration_time = time_kit.get_days_distance(day_start, day_end)
+    for date in range(duration_time):
+        crawling_date = time_kit.get_crawling_date(day_start, date)
+        crawling_result = crawling_oneday(word, crawling_date)
+        save_json(crawling_date, crawling_result)
+        print(crawling_date + " : crawling complete")
+    print("crawling mutiple day end")
     
 
+def save_json(filename, json_data):
+    folder_name = "crawling_result/"
+    with open(folder_name + filename + '.json', 'w', encoding='utf-8') as f:
+        json.dump(json_data, fp = f, ensure_ascii=False, sort_keys=False, indent=4)
+
 if __name__ == "__main__" :
-    result = news_crawling("삼성전자", '2020.09.26', '2020.09.26')
+    crawling_multiple_day("삼성전자", '2020.05.01', '2020.08.31')
     
-    with open('test.json', 'w', encoding='utf-8') as f:
-        json.dump(result, fp = f, ensure_ascii=False, sort_keys=False, indent=4)
