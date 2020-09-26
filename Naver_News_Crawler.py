@@ -1,6 +1,9 @@
 import requests as req
 import bs4 as soup
 import json
+
+import time_kit
+
 """
 return type
 
@@ -10,10 +13,22 @@ return type
     {
         "title": "500대 기업, 5년간 M&amp;A투자 59조...<b>삼성전자</b> 10조 최다",
         "originallink": "http://www.consumernews.co.kr/news/articleView.html?idxno=612438",
-        "pubDate": "Wed, 16 Sep 2020 09:00:00 +0900"
+        "pubDate": "%Y.%m.%d. %H:%M:%S"
     },
     ...
 """
+
+def pub_date_make(pub_date):
+    # pub_date = str(pub_date.encode('utf-8'))
+    if "분" in pub_date :
+        return time_kit.get_pub_date(minute=pub_date.split("분")[0])
+    if "시간" in pub_date :
+        return time_kit.get_pub_date(hour=pub_date.split("시간")[0])
+    if "일" in pub_date :
+        return time_kit.get_pub_date(days=pub_date.split("일")[0])
+    
+    return time_kit.make_pub_date(pub_date)
+
 def news_crawling(word, day_start = None, day_end = None, sort = 1):
     base_url = "https://search.naver.com/search.naver?where=news"
     result = {"total" : 0, "items" : []}
@@ -51,7 +66,10 @@ def news_crawling(word, day_start = None, day_end = None, sort = 1):
             item["title"] = i.find(class_="_sp_each_title")['title']
             item["article_id"] = i.find(class_="_sp_each_title")['onclick'].split('&')[2][25:]
             item["original_link"] = i.find(class_="_sp_each_title")['href']
-            item["pub_date"] = [i for i in i.find(class_="txt_inline").text.split("  ") if ' 전' in i or '.' in i][0]
+
+            time = [i for i in i.find(class_="txt_inline").text.split("  ") if ' 전' in i or '.' in i][0]
+            item["pub_date"] = pub_date_make(time)
+            # item["pub_date"] = [i for i in i.find(class_="txt_inline").text.split("  ") if ' 전' in i or '.' in i][0]
             """
             title = i.find(class_="_sp_each_title")['title']
             article_id = i.find(class_="_sp_each_title")['onclick'].split('&')[2][25:]
@@ -64,7 +82,7 @@ def news_crawling(word, day_start = None, day_end = None, sort = 1):
     return result
 
 if __name__ == "__main__" :
-    result = news_crawling("삼성전자", '2020.09.18', '2020.09.18')
+    result = news_crawling("삼성전자", '2020.09.26', '2020.09.26')
     
     with open('test.json', 'w', encoding='utf-8') as f:
         json.dump(result, fp = f, ensure_ascii=False, sort_keys=False, indent=4)
